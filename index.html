@@ -69,6 +69,7 @@ dialog h3{margin:0 0 4px}
   <nav id="nav" class="hide">
     <button id="nTemp" class="on">Tempahan</button>
     <button id="nLap" class="hide">Laporan</button>
+    <button id="nBilik" class="hide">Bilik</button>
   </nav>
   <div class="sp"></div>
   <span class="who hide" id="who"></span>
@@ -97,6 +98,7 @@ dialog h3{margin:0 0 4px}
   <section id="vTemp" class="hide">
     <div class="card">
       <div class="bar">
+        <div><label for="dBilik" style="margin-top:0">Bilik</label><select id="dBilik"></select></div>
         <div><label for="dTarikh" style="margin-top:0">Pilih tarikh</label><input type="date" id="dTarikh"></div>
         <strong id="dHari"></strong>
       </div>
@@ -115,13 +117,27 @@ dialog h3{margin:0 0 4px}
           <select id="rJenis"><option value="w">Seminggu</option><option value="m">Sebulan</option></select></div>
         <div id="rW"><label for="rTarikh" style="margin-top:0">Tarikh dalam minggu itu</label><input type="date" id="rTarikh"></div>
         <div id="rM" class="hide"><label for="rBulan" style="margin-top:0">Bulan</label><input type="month" id="rBulan"></div>
+        <div><label for="rBilik" style="margin-top:0">Bilik</label><select id="rBilik"></select></div>
         <button class="pri" id="rGo">Jana laporan</button>
         <button id="rPrint" class="hide">Cetak</button>
         <button id="rCsv" class="hide">Muat turun CSV</button>
       </div>
       <div class="msg" id="rMsg" role="alert"></div>
       <h3 id="rTitle" class="hide" style="margin:0 0 10px"></h3>
-      <div class="scroll"><table id="rTbl" class="hide"><thead><tr><th>Tarikh</th><th>Hari</th><th>Waktu</th><th>Nama</th><th>Kelas</th><th>Tujuan</th></tr></thead><tbody></tbody></table></div>
+      <div class="scroll"><table id="rTbl" class="hide"><thead><tr><th>Tarikh</th><th>Hari</th><th>Waktu</th><th>Bilik</th><th>Nama</th><th>Kelas</th><th>Tujuan</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+  <!-- Urus bilik (admin) -->
+  <section id="vBilik" class="hide">
+    <div class="card">
+      <h3 style="margin:0 0 4px">Urus bilik</h3>
+      <p class="legend">Tambah bilik baharu (contoh: Bilik Digital). Bilik yang tidak lagi digunakan dinyahaktifkan, bukan dipadam, supaya rekod tempahan lama kekal.</p>
+      <form id="fRoom" class="bar" style="align-items:end">
+        <div style="flex:1"><label for="mNama" style="margin-top:0">Nama bilik baharu</label><input id="mNama" maxlength="60" required></div>
+        <button class="pri">Tambah bilik</button>
+      </form>
+      <div class="msg" id="mMsg" role="alert"></div>
+      <div class="scroll"><table id="mTbl"><thead><tr><th>Nama bilik</th><th>Status</th><th></th></tr></thead><tbody></tbody></table></div>
     </div>
   </section>
 </main>
@@ -150,7 +166,7 @@ const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`
 const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
 const fmtDMY = s => { const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; };
 
-let S = null, edit = null, slots = [], lastRows = [];
+let S = null, edit = null, slots = [], lastRows = [], rooms = [];
 try { S = JSON.parse(localStorage.getItem('trendss') || 'null'); } catch (e) {}
 
 async function api(action, data = {}) {
@@ -166,18 +182,20 @@ async function api(action, data = {}) {
 
 /* ---------- Paparan ---------- */
 function view(v) {
-  ['vAuth','vTemp','vLap'].forEach(x => $('#'+x).classList.toggle('hide', x !== v));
+  ['vAuth','vTemp','vLap','vBilik'].forEach(x => $('#'+x).classList.toggle('hide', x !== v));
   $('#nTemp').classList.toggle('on', v === 'vTemp');
   $('#nLap').classList.toggle('on', v === 'vLap');
+  $('#nBilik').classList.toggle('on', v === 'vBilik');
 }
-function enter() {
+async function enter() {
   const on = !!S;
   ['nav','who','btnOut'].forEach(x => $('#'+x).classList.toggle('hide', !on));
   if (!on) { view('vAuth'); return; }
   $('#who').textContent = S.nama + (S.role === 'admin' ? ' (admin)' : '');
   $('#nLap').classList.toggle('hide', S.role !== 'admin');
+  $('#nBilik').classList.toggle('hide', S.role !== 'admin');
   if (!$('#dTarikh').value) $('#dTarikh').value = fmt(new Date());
-  view('vTemp'); loadDay();
+  view('vTemp'); await loadRooms(); loadDay();
 }
 function logout() { S = null; localStorage.removeItem('trendss'); enter(); }
 
@@ -212,21 +230,25 @@ $('#fAuth').onsubmit = async e => {
 };
 $('#btnOut').onclick = logout;
 $('#nTemp').onclick = () => { view('vTemp'); loadDay(); };
-$('#nLap').onclick = () => view('vLap');
+$('#nLap').onclick = () => { view('vLap'); loadRooms(); };
+$('#nBilik').onclick = () => { view('vBilik'); loadRooms(); };
 
 /* ---------- Jadual harian ---------- */
 $('#dTarikh').onchange = loadDay;
+$('#dBilik').onchange = loadDay;
 async function loadDay() {
   const t = $('#dTarikh').value, msg = $('#tMsg'), tb = $('#tbl tbody');
   msg.className = 'msg'; msg.textContent = '';
   if (!t) return;
+  const b = $('#dBilik').value;
+  if (!b) { tb.innerHTML = ''; msg.textContent = 'Tiada bilik aktif. Sila hubungi admin.'; return; }
   const dow = parse(t).getDay();
-  $('#dHari').textContent = `${HARI[dow]}, ${fmtDMY(t)}`;
+  $('#dHari').textContent = `${roomName(b)} | ${HARI[dow]}, ${fmtDMY(t)}`;
   if (dow === 0) { tb.innerHTML = ''; msg.textContent = 'Tiada tempahan pada hari Ahad. Pilih Isnin hingga Sabtu.'; return; }
   $('#bookBtn').disabled = true; $('#bookBtn').textContent = 'Tempah'; $('#selInfo').textContent = '';
   tb.innerHTML = '<tr><td colspan="5" class="free">Memuatkan jadual...</td></tr>';
   try {
-    const { data } = await api('day', { tarikh: t });
+    const { data } = await api('day', { tarikh: t, bilik: b });
     const by = {}; data.forEach(r => by[r.waktu] = r);
     let h = '';
     for (let w = 1; w <= 13; w++) {
@@ -258,7 +280,7 @@ $('#tbl').onchange = e => {
 $('#bookBtn').onclick = () => {
   slots = [...document.querySelectorAll('.pick:checked')].map(x => +x.dataset.w);
   if (!slots.length) return;
-  edit = null; openDlg(`Tempah Waktu ${slots.join(', ')}`, '', '');
+  edit = null; openDlg(`Tempah Waktu ${slots.join(', ')} (${roomName($('#dBilik').value)})`, '', '');
 };
 
 /* ---------- Dialog ---------- */
@@ -274,11 +296,46 @@ $('#fBook').onsubmit = async e => {
     const d = { kelas: $('#bKelas').value, tujuan: $('#bTujuan').value };
     let r = null;
     if (edit) await api('update', { ...d, id: edit });
-    else r = await api('book', { ...d, tarikh: $('#dTarikh').value, waktu: slots });
+    else r = await api('book', { ...d, tarikh: $('#dTarikh').value, waktu: slots, bilik: $('#dBilik').value });
     $('#dlg').close(); await loadDay();
     if (r && r.dilangkau.length) { $('#tMsg').textContent = `${r.dibuat} waktu berjaya ditempah. Waktu ${r.dilangkau.join(', ')} baru sahaja ditempah orang lain.`; }
   } catch (err) { $('#bMsg').textContent = err.message; }
   btn.disabled = false;
+};
+
+/* ---------- Bilik ---------- */
+const roomName = id => (rooms.find(r => r.id === id) || {}).nama || id;
+async function loadRooms() {
+  try {
+    const { data } = await api('rooms', { semua: S.role === 'admin' });
+    rooms = data;
+    const keep = $('#dBilik').value, act = rooms.filter(r => r.aktif);
+    $('#dBilik').innerHTML = act.map(r => `<option value="${esc(r.id)}">${esc(r.nama)}</option>`).join('');
+    if (act.some(r => r.id === keep)) $('#dBilik').value = keep;
+    const kr = $('#rBilik').value;
+    $('#rBilik').innerHTML = '<option value="">Semua bilik</option>' + rooms.map(r => `<option value="${esc(r.id)}">${esc(r.nama)}${r.aktif ? '' : ' (tidak aktif)'}</option>`).join('');
+    $('#rBilik').value = kr;
+    $('#mTbl tbody').innerHTML = rooms.map(r => `<tr><td>${esc(r.nama)}</td><td>${r.aktif ? 'Aktif' : '<span class="free">Tidak aktif</span>'}</td><td class="act"><button data-a="ren" data-id="${esc(r.id)}">Tukar nama</button> <button data-a="tog" data-id="${esc(r.id)}">${r.aktif ? 'Nyahaktif' : 'Aktifkan'}</button></td></tr>`).join('');
+  } catch (err) { $('#tMsg').textContent = err.message; }
+}
+$('#fRoom').onsubmit = async e => {
+  e.preventDefault(); const m = $('#mMsg'); m.className = 'msg'; m.textContent = '';
+  try { await api('roomAdd', { nama: $('#mNama').value }); $('#mNama').value = ''; m.className = 'msg ok'; m.textContent = 'Bilik ditambah.'; await loadRooms(); }
+  catch (err) { m.textContent = err.message; }
+};
+$('#mTbl').onclick = async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const m = $('#mMsg'); m.className = 'msg'; m.textContent = '';
+  try {
+    if (b.dataset.a === 'ren') {
+      const n = prompt('Nama bilik baharu:', roomName(b.dataset.id)); if (!n) return;
+      await api('roomUpdate', { id: b.dataset.id, nama: n });
+    } else {
+      const r = rooms.find(x => x.id === b.dataset.id);
+      await api('roomUpdate', { id: r.id, aktif: !r.aktif });
+    }
+    await loadRooms();
+  } catch (err) { m.textContent = err.message; }
 };
 
 /* ---------- Laporan ---------- */
@@ -298,17 +355,17 @@ $('#rGo').onclick = async () => {
     from = ym + '-01'; to = `${ym}-${pad(new Date(y, m, 0).getDate())}`; title = `Laporan bulanan: ${pad(m)}/${y}`;
   }
   try {
-    const { data } = await api('report', { from, to });
+    const { data } = await api('report', { from, to, bilik: $('#rBilik').value });
     lastRows = data;
-    $('#rTitle').textContent = `${title} (${data.length} tempahan)`;
-    $('#rTbl tbody').innerHTML = data.length ? data.map(r => `<tr><td>${fmtDMY(r.tarikh)}</td><td>${HARI[parse(r.tarikh).getDay()]}</td><td>${r.waktu}</td><td>${esc(r.nama)}</td><td>${esc(r.kelas)}</td><td>${esc(r.tujuan)}</td></tr>`).join('') : '<tr><td colspan="6" class="free">Tiada tempahan dalam tempoh ini.</td></tr>';
+    $('#rTitle').textContent = `${title}${$('#rBilik').value ? ' | ' + roomName($('#rBilik').value) : ' | Semua bilik'} (${data.length} tempahan)`;
+    $('#rTbl tbody').innerHTML = data.length ? data.map(r => `<tr><td>${fmtDMY(r.tarikh)}</td><td>${HARI[parse(r.tarikh).getDay()]}</td><td>${r.waktu}</td><td>${esc(r.bilikNama)}</td><td>${esc(r.nama)}</td><td>${esc(r.kelas)}</td><td>${esc(r.tujuan)}</td></tr>`).join('') : '<tr><td colspan="7" class="free">Tiada tempahan dalam tempoh ini.</td></tr>';
     ['rTitle','rTbl','rPrint','rCsv'].forEach(x => $('#'+x).classList.remove('hide'));
   } catch (err) { msg.textContent = err.message; }
 };
 $('#rPrint').onclick = () => window.print();
 $('#rCsv').onclick = () => {
   const q = v => '"' + String(v).replace(/"/g, '""') + '"';
-  const csv = ['Tarikh,Hari,Waktu,Nama,Kelas,Tujuan'].concat(lastRows.map(r => [r.tarikh, HARI[parse(r.tarikh).getDay()], r.waktu, r.nama, r.kelas, r.tujuan].map(q).join(','))).join('\n');
+  const csv = ['Tarikh,Hari,Waktu,Bilik,Nama,Kelas,Tujuan'].concat(lastRows.map(r => [r.tarikh, HARI[parse(r.tarikh).getDay()], r.waktu, r.bilikNama, r.nama, r.kelas, r.tujuan].map(q).join(','))).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv' }));
   a.download = 'laporan-tempahan-trendss.csv'; a.click();
