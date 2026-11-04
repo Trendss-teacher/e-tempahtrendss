@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>e-tempah TRENDSS</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%230b7a75'/%3E%3Crect x='8' y='9' width='32' height='22' rx='3' fill='%23fff'/%3E%3Crect x='12' y='13' width='6' height='6' fill='%230b7a75'/%3E%3Crect x='21' y='13' width='6' height='6' fill='%23cfeeea'/%3E%3Crect x='30' y='13' width='6' height='6' fill='%23cfeeea'/%3E%3Crect x='12' y='21' width='6' height='6' fill='%23cfeeea'/%3E%3Crect x='21' y='21' width='6' height='6' fill='%230b7a75'/%3E%3Crect x='30' y='21' width='6' height='6' fill='%23cfeeea'/%3E%3Crect x='20' y='33' width='8' height='4' fill='%23fff'/%3E%3Crect x='14' y='37' width='20' height='3' rx='1.5' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -11,8 +12,13 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
 header{background:var(--ink);color:#fff;padding:14px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-header h1{margin:0;font-size:1.25rem;letter-spacing:.2px}
-header h1 span{color:#6fd8cf}
+header h1{margin:0;font-size:1.25rem;letter-spacing:.2px;display:flex;align-items:center;gap:10px}
+.hsek{height:36px;width:auto;background:#fff;border-radius:6px;padding:2px}
+.brand{text-align:center;margin-bottom:6px}
+.brand .sek{max-height:96px;max-width:70%;display:block;margin:0 auto 14px}
+.brand h2{margin:8px 0 0;font-size:1.35rem}
+.brand p{margin:2px 0 0;color:var(--mut);font-size:.92rem}
+header h1 span span{color:#6fd8cf}
 header nav{display:flex;gap:6px;margin-left:12px}
 header .sp{flex:1}
 header .who{font-size:.9rem;opacity:.85}
@@ -58,8 +64,14 @@ dialog h3{margin:0 0 4px}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="lg" viewBox="0 0 48 48">
+  <rect width="48" height="48" rx="11" fill="#0b7a75"/><rect x="8" y="9" width="32" height="22" rx="3" fill="#fff"/>
+  <g fill="#cfeeea"><rect x="21" y="13" width="6" height="6"/><rect x="30" y="13" width="6" height="6"/><rect x="12" y="21" width="6" height="6"/><rect x="30" y="21" width="6" height="6"/></g>
+  <g fill="#0b7a75"><rect x="12" y="13" width="6" height="6"/><rect x="21" y="21" width="6" height="6"/></g>
+  <rect x="20" y="33" width="8" height="4" fill="#fff"/><rect x="14" y="37" width="20" height="3" rx="1.5" fill="#fff"/>
+</symbol></svg>
 <header>
-  <h1>e-tempah <span>TRENDSS</span></h1>
+  <h1><img class="hsek" src="logo-sekolah.png" alt="Logo sekolah" onerror="this.style.display='none'"><svg width="34" height="34" aria-hidden="true"><use href="#lg"/></svg><span>e-tempah <span>TRENDSS</span></span></h1>
   <nav id="nav" class="hide">
     <button id="nTemp" class="on">Tempahan</button>
     <button id="nLap" class="hide">Laporan</button>
@@ -72,7 +84,12 @@ dialog h3{margin:0 0 4px}
 <main>
   <!-- Log masuk / daftar -->
   <section id="vAuth" class="card auth">
-    <h2>Tempahan makmal komputer</h2>
+    <div class="brand">
+      <img class="sek" src="logo-sekolah.png" alt="Logo sekolah" onerror="this.style.display='none'">
+      <svg width="64" height="64" role="img" aria-label="Logo e-tempah TRENDSS"><use href="#lg"/></svg>
+      <h2>e-tempah TRENDSS</h2>
+      <p>Sistem tempahan makmal komputer</p>
+    </div>
     <div class="tabs"><button id="tLogin" class="on">Log masuk</button><button id="tReg">Daftar akaun</button></div>
     <form id="fAuth" autocomplete="on">
       <div id="rowNama" class="hide"><label for="aNama">Nama penuh</label><input id="aNama" autocomplete="name"></div>
