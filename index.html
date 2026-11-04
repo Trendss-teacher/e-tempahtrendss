@@ -51,6 +51,8 @@ dialog::backdrop{background:rgba(16,36,58,.5)}
 dialog h3{margin:0 0 4px}
 .row{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
 .hide{display:none!important}
+.chk{display:flex;gap:12px;flex-wrap:wrap}.chk label{display:flex;gap:5px;align-items:center;font-weight:400;margin:0}.chk input{width:auto}
+.two{display:flex;gap:10px}.two>div{flex:1}
 .legend{font-size:.85rem;color:var(--mut);margin:0 0 12px}
 @media print{header,.bar,.noprint{display:none!important}body{background:#fff}.card{border:0;padding:0}}
 </style>
@@ -87,6 +89,7 @@ dialog h3{margin:0 0 4px}
       <div class="bar">
         <div><label for="dTarikh" style="margin-top:0">Pilih tarikh</label><input type="date" id="dTarikh"></div>
         <strong id="dHari"></strong>
+        <button id="bulkBtn" style="margin-left:auto">Tempah pukal</button>
       </div>
       <p class="legend">Waktu 1 hingga 13, Isnin hingga Sabtu. Baris hijau ialah tempahan anda.</p>
       <div class="msg" id="tMsg" role="alert"></div>
@@ -113,6 +116,24 @@ dialog h3{margin:0 0 4px}
   </section>
 </main>
 
+<!-- Dialog tempah pukal -->
+<dialog id="dlgB">
+  <form id="fBulk" method="dialog">
+    <h3>Tempah pukal</h3>
+    <p class="legend" style="margin:0">Satu kelas yang sama, berulang pada hari dan waktu pilihan. Slot yang sudah ditempah dilangkau.</p>
+    <div class="two"><div><label for="pFrom">Dari tarikh</label><input type="date" id="pFrom" required></div>
+    <div><label for="pTo">Hingga tarikh</label><input type="date" id="pTo" required></div></div>
+    <label>Hari</label>
+    <div class="chk" id="pHari"></div>
+    <div class="two"><div><label for="pWa">Waktu dari</label><select id="pWa"></select></div>
+    <div><label for="pWb">Hingga waktu</label><select id="pWb"></select></div></div>
+    <label for="pKelas">Kelas</label><input id="pKelas" maxlength="80" required>
+    <label for="pTujuan">Tujuan</label><input id="pTujuan" maxlength="200" required>
+    <div class="msg" id="pMsg" role="alert"></div>
+    <div class="row"><button type="button" id="pCancel">Batal</button><button class="pri" id="pOk">Tempah semua</button></div>
+  </form>
+</dialog>
+
 <!-- Dialog tempah / edit -->
 <dialog id="dlg">
   <form id="fBook" method="dialog">
@@ -126,7 +147,7 @@ dialog h3{margin:0 0 4px}
 
 <script>
 /* ===== TETAPAN: tampal URL Web App Apps Script anda di sini ===== */
-const API_URL = "https://script.google.com/macros/s/AKfycbyPhe1YipdNdwOoE3uUrWcc4BImAnUUz4LTVsyd_f6AlffNpZh7HCodS9hLFlAV7Qn05Q/exec";
+const API_URL = "PASTE_URL_WEB_APP_DI_SINI";
 /* ================================================================ */
 
 const $ = s => document.querySelector(s);
@@ -205,7 +226,7 @@ $('#nLap').onclick = () => view('vLap');
 $('#dTarikh').onchange = loadDay;
 async function loadDay() {
   const t = $('#dTarikh').value, msg = $('#tMsg'), tb = $('#tbl tbody');
-  msg.textContent = '';
+  msg.className = 'msg'; msg.textContent = '';
   if (!t) return;
   const dow = parse(t).getDay();
   $('#dHari').textContent = `${HARI[dow]}, ${fmtDMY(t)}`;
@@ -252,6 +273,33 @@ $('#fBook').onsubmit = async e => {
     $('#dlg').close(); loadDay();
   } catch (err) { $('#bMsg').textContent = err.message; }
   btn.disabled = false;
+};
+
+/* ---------- Tempah pukal ---------- */
+$('#pHari').innerHTML = HARI.slice(1).map((n, i) => `<label><input type="checkbox" value="${i+1}">${n}</label>`).join('');
+const opts = Array.from({length: 13}, (_, i) => `<option value="${i+1}">Waktu ${i+1}</option>`).join('');
+$('#pWa').innerHTML = opts; $('#pWb').innerHTML = opts; $('#pWb').value = '1';
+$('#bulkBtn').onclick = () => {
+  const t = $('#dTarikh').value || fmt(new Date());
+  $('#pFrom').value = t; $('#pTo').value = t; $('#pMsg').textContent = '';
+  $('#dlgB').showModal();
+};
+$('#pCancel').onclick = () => $('#dlgB').close();
+$('#fBulk').onsubmit = async e => {
+  e.preventDefault();
+  const btn = $('#pOk'), m = $('#pMsg'); m.textContent = '';
+  const hari = [...document.querySelectorAll('#pHari input:checked')].map(x => +x.value);
+  if (!hari.length) { m.textContent = 'Pilih sekurang-kurangnya satu hari.'; return; }
+  if (+$('#pWa').value > +$('#pWb').value) { m.textContent = 'Waktu dari mesti sebelum atau sama dengan waktu hingga.'; return; }
+  btn.disabled = true; btn.textContent = 'Menempah...';
+  try {
+    const r = await api('bulk', { from: $('#pFrom').value, to: $('#pTo').value, hari, wFrom: +$('#pWa').value, wTo: +$('#pWb').value, kelas: $('#pKelas').value, tujuan: $('#pTujuan').value });
+    $('#dlgB').close();
+    await loadDay();
+    const tm = $('#tMsg'); tm.className = 'msg ok';
+    tm.textContent = `${r.dibuat} slot berjaya ditempah.` + (r.dilangkau.length ? ` ${r.dilangkau.length} slot dilangkau kerana sudah ditempah: ` + r.dilangkau.map(x => `${fmtDMY(x.tarikh)} W${x.waktu}`).join(', ') : '');
+  } catch (err) { m.textContent = err.message; }
+  btn.disabled = false; btn.textContent = 'Tempah semua';
 };
 
 /* ---------- Laporan ---------- */
