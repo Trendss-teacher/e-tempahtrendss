@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>e-tempah TRENDSS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#10243a;--mut:#5b6b7c;--bg:#eef2f6;--card:#fff;--line:#d3dce6;--acc:#0b7a75;--accd:#095e5a;--busy:#e3edf7;--mine:#d8f1e9;--err:#b3261e}
+*{box-sizing:border-box}
+body{margin:0;font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+header{background:var(--ink);color:#fff;padding:14px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+header h1{margin:0;font-size:1.25rem;letter-spacing:.2px}
+header h1 span{color:#6fd8cf}
+header nav{display:flex;gap:6px;margin-left:12px}
+header .sp{flex:1}
+header .who{font-size:.9rem;opacity:.85}
+main{max-width:960px;margin:0 auto;padding:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:20px}
+button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:7px 14px}
+button:hover{border-color:var(--acc)}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:500}
+button.pri:hover{background:var(--accd)}
+button.dng{color:var(--err)}
+header button{background:transparent;color:#fff;border-color:#40566e}
+header button.on{background:#fff;color:var(--ink)}
+:focus-visible{outline:3px solid #6fd8cf;outline-offset:2px}
+label{display:block;font-weight:500;margin:12px 0 4px}
+input,select{font:inherit;width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:#fff}
+.auth{max-width:400px;margin:40px auto}
+.auth h2{margin:0 0 4px}
+.tabs{display:flex;gap:8px;margin:12px 0}
+.tabs button{flex:1}.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.msg{margin-top:12px;font-size:.92rem;color:var(--err);min-height:1.2em}
+.msg.ok{color:var(--accd)}
+.bar{display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:16px}
+.bar>div{min-width:170px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;font-size:.95rem}
+th{font-weight:700;background:#f6f9fc}
+tr.busy td{background:var(--busy)}
+tr.mine td{background:var(--mine)}
+.w{white-space:nowrap;font-weight:500;width:90px}
+.act{white-space:nowrap;text-align:right;width:1%}
+.act button{padding:4px 10px;font-size:.85rem}
+.free{color:var(--mut)}
+.scroll{overflow-x:auto}
+dialog{border:1px solid var(--line);border-radius:10px;padding:22px;width:min(420px,92vw)}
+dialog::backdrop{background:rgba(16,36,58,.5)}
+dialog h3{margin:0 0 4px}
+.row{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.hide{display:none!important}
+.legend{font-size:.85rem;color:var(--mut);margin:0 0 12px}
+@media print{header,.bar,.noprint{display:none!important}body{background:#fff}.card{border:0;padding:0}}
+</style>
+</head>
+<body>
+<header>
+  <h1>e-tempah <span>TRENDSS</span></h1>
+  <nav id="nav" class="hide">
+    <button id="nTemp" class="on">Tempahan</button>
+    <button id="nLap" class="hide">Laporan</button>
+  </nav>
+  <div class="sp"></div>
+  <span class="who hide" id="who"></span>
+  <button id="btnOut" class="hide">Log keluar</button>
+</header>
+
+<main>
+  <!-- Log masuk / daftar -->
+  <section id="vAuth" class="card auth">
+    <h2>Tempahan makmal komputer</h2>
+    <div class="tabs"><button id="tLogin" class="on">Log masuk</button><button id="tReg">Daftar akaun</button></div>
+    <form id="fAuth" autocomplete="on">
+      <div id="rowNama" class="hide"><label for="aNama">Nama penuh</label><input id="aNama" autocomplete="name"></div>
+      <label for="aUser">Username</label><input id="aUser" autocomplete="username">
+      <label for="aPass">Password</label><input id="aPass" type="password" autocomplete="current-password">
+      <div class="msg" id="aMsg" role="alert"></div>
+      <button class="pri" id="aBtn" style="width:100%;margin-top:8px">Log masuk</button>
+    </form>
+  </section>
+
+  <!-- Jadual tempahan -->
+  <section id="vTemp" class="hide">
+    <div class="card">
+      <div class="bar">
+        <div><label for="dTarikh" style="margin-top:0">Pilih tarikh</label><input type="date" id="dTarikh"></div>
+        <strong id="dHari"></strong>
+      </div>
+      <p class="legend">Waktu 1 hingga 13, Isnin hingga Sabtu. Baris hijau ialah tempahan anda.</p>
+      <div class="msg" id="tMsg" role="alert"></div>
+      <div class="scroll"><table id="tbl"><thead><tr><th>Waktu</th><th>Penempah</th><th>Kelas</th><th>Tujuan</th><th></th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- Laporan admin -->
+  <section id="vLap" class="hide">
+    <div class="card">
+      <div class="bar noprint">
+        <div><label for="rJenis" style="margin-top:0">Tempoh</label>
+          <select id="rJenis"><option value="w">Seminggu</option><option value="m">Sebulan</option></select></div>
+        <div id="rW"><label for="rTarikh" style="margin-top:0">Tarikh dalam minggu itu</label><input type="date" id="rTarikh"></div>
+        <div id="rM" class="hide"><label for="rBulan" style="margin-top:0">Bulan</label><input type="month" id="rBulan"></div>
+        <button class="pri" id="rGo">Jana laporan</button>
+        <button id="rPrint" class="hide">Cetak</button>
+        <button id="rCsv" class="hide">Muat turun CSV</button>
+      </div>
+      <div class="msg" id="rMsg" role="alert"></div>
+      <h3 id="rTitle" class="hide" style="margin:0 0 10px"></h3>
+      <div class="scroll"><table id="rTbl" class="hide"><thead><tr><th>Tarikh</th><th>Hari</th><th>Waktu</th><th>Nama</th><th>Kelas</th><th>Tujuan</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+</main>
+
+<!-- Dialog tempah / edit -->
+<dialog id="dlg">
+  <form id="fBook" method="dialog">
+    <h3 id="dTitle"></h3>
+    <label for="bKelas">Kelas</label><input id="bKelas" maxlength="80" required>
+    <label for="bTujuan">Tujuan</label><input id="bTujuan" maxlength="200" required>
+    <div class="msg" id="bMsg" role="alert"></div>
+    <div class="row"><button type="button" id="bCancel">Batal</button><button class="pri" id="bOk">Sahkan</button></div>
+  </form>
+</dialog>
+
+<script>
+/* ===== TETAPAN: tampal URL Web App Apps Script anda di sini ===== */
+const API_URL = "https://script.google.com/macros/s/AKfycbyPhe1YipdNdwOoE3uUrWcc4BImAnUUz4LTVsyd_f6AlffNpZh7HCodS9hLFlAV7Qn05Q/exec";
+/* ================================================================ */
+
+const $ = s => document.querySelector(s);
+const HARI = ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2, '0');
+const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const fmtDMY = s => { const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; };
+
+let S = null, edit = null, slot = null, lastRows = [];
+try { S = JSON.parse(localStorage.getItem('trendss') || 'null'); } catch (e) {}
+
+async function api(action, data = {}) {
+  if (API_URL.startsWith('PASTE')) throw new Error('URL Apps Script belum dimasukkan dalam index.html');
+  let j;
+  try {
+    const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, token: S && S.token, ...data }) });
+    j = await r.json();
+  } catch (e) { throw new Error('Tidak dapat berhubung dengan pelayan. Semak URL Apps Script dan tetapan akses.'); }
+  if (!j.ok) { if (j.auth) logout(); throw new Error(j.msg); }
+  return j;
+}
+
+/* ---------- Paparan ---------- */
+function view(v) {
+  ['vAuth','vTemp','vLap'].forEach(x => $('#'+x).classList.toggle('hide', x !== v));
+  $('#nTemp').classList.toggle('on', v === 'vTemp');
+  $('#nLap').classList.toggle('on', v === 'vLap');
+}
+function enter() {
+  const on = !!S;
+  ['nav','who','btnOut'].forEach(x => $('#'+x).classList.toggle('hide', !on));
+  if (!on) { view('vAuth'); return; }
+  $('#who').textContent = S.nama + (S.role === 'admin' ? ' (admin)' : '');
+  $('#nLap').classList.toggle('hide', S.role !== 'admin');
+  if (!$('#dTarikh').value) $('#dTarikh').value = fmt(new Date());
+  view('vTemp'); loadDay();
+}
+function logout() { S = null; localStorage.removeItem('trendss'); enter(); }
+
+/* ---------- Auth ---------- */
+let mode = 'login';
+function setMode(m) {
+  mode = m;
+  $('#tLogin').classList.toggle('on', m === 'login'); $('#tReg').classList.toggle('on', m === 'reg');
+  $('#rowNama').classList.toggle('hide', m === 'login');
+  $('#aBtn').textContent = m === 'login' ? 'Log masuk' : 'Daftar akaun';
+  $('#aPass').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+  $('#aMsg').textContent = '';
+}
+$('#tLogin').onclick = () => setMode('login');
+$('#tReg').onclick = () => setMode('reg');
+$('#fAuth').onsubmit = async e => {
+  e.preventDefault();
+  const m = $('#aMsg'); m.className = 'msg'; m.textContent = 'Sila tunggu...';
+  try {
+    const d = { username: $('#aUser').value, password: $('#aPass').value };
+    if (mode === 'reg') {
+      d.nama = $('#aNama').value;
+      const r = await api('register', d);
+      setMode('login'); $('#aMsg').className = 'msg ok'; $('#aMsg').textContent = r.msg; $('#aPass').value = '';
+    } else {
+      const r = await api('login', d);
+      S = { token: r.token, username: r.username, nama: r.nama, role: r.role };
+      localStorage.setItem('trendss', JSON.stringify(S));
+      $('#aPass').value = ''; m.textContent = ''; enter();
+    }
+  } catch (err) { m.className = 'msg'; m.textContent = err.message; }
+};
+$('#btnOut').onclick = logout;
+$('#nTemp').onclick = () => { view('vTemp'); loadDay(); };
+$('#nLap').onclick = () => view('vLap');
+
+/* ---------- Jadual harian ---------- */
+$('#dTarikh').onchange = loadDay;
+async function loadDay() {
+  const t = $('#dTarikh').value, msg = $('#tMsg'), tb = $('#tbl tbody');
+  msg.textContent = '';
+  if (!t) return;
+  const dow = parse(t).getDay();
+  $('#dHari').textContent = `${HARI[dow]}, ${fmtDMY(t)}`;
+  if (dow === 0) { tb.innerHTML = ''; msg.textContent = 'Tiada tempahan pada hari Ahad. Pilih Isnin hingga Sabtu.'; return; }
+  tb.innerHTML = '<tr><td colspan="5" class="free">Memuatkan jadual...</td></tr>';
+  try {
+    const { data } = await api('day', { tarikh: t });
+    const by = {}; data.forEach(r => by[r.waktu] = r);
+    let h = '';
+    for (let w = 1; w <= 13; w++) {
+      const r = by[w];
+      if (!r) { h += `<tr><td class="w">Waktu ${w}</td><td class="free" colspan="3">Kosong</td><td class="act"><button class="pri" data-a="book" data-w="${w}">Tempah</button></td></tr>`; continue; }
+      const mine = r.username.toLowerCase() === S.username.toLowerCase();
+      h += `<tr class="${mine ? 'mine' : 'busy'}"><td class="w">Waktu ${w}</td><td>${esc(r.nama)}</td><td>${esc(r.kelas)}</td><td>${esc(r.tujuan)}</td><td class="act">` +
+        (mine ? `<button data-a="edit" data-id="${esc(r.id)}" data-k="${esc(r.kelas)}" data-t="${esc(r.tujuan)}">Edit</button> <button class="dng" data-a="del" data-id="${esc(r.id)}">Padam</button>` : '') + '</td></tr>';
+    }
+    tb.innerHTML = h;
+  } catch (err) { tb.innerHTML = ''; msg.textContent = err.message; }
+}
+$('#tbl').onclick = async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const a = b.dataset.a;
+  if (a === 'book') { edit = null; slot = +b.dataset.w; openDlg(`Tempah Waktu ${slot}`, '', ''); }
+  if (a === 'edit') { edit = b.dataset.id; openDlg('Edit tempahan', b.dataset.k, b.dataset.t); }
+  if (a === 'del' && confirm('Padam tempahan ini?')) {
+    try { await api('delete', { id: b.dataset.id }); } catch (err) { $('#tMsg').textContent = err.message; }
+    loadDay();
+  }
+};
+
+/* ---------- Dialog ---------- */
+function openDlg(title, k, t) {
+  $('#dTitle').textContent = title; $('#bKelas').value = k; $('#bTujuan').value = t; $('#bMsg').textContent = '';
+  $('#dlg').showModal(); $('#bKelas').focus();
+}
+$('#bCancel').onclick = () => $('#dlg').close();
+$('#fBook').onsubmit = async e => {
+  e.preventDefault();
+  const btn = $('#bOk'); btn.disabled = true;
+  try {
+    const d = { kelas: $('#bKelas').value, tujuan: $('#bTujuan').value };
+    if (edit) await api('update', { ...d, id: edit });
+    else await api('book', { ...d, tarikh: $('#dTarikh').value, waktu: slot });
+    $('#dlg').close(); loadDay();
+  } catch (err) { $('#bMsg').textContent = err.message; }
+  btn.disabled = false;
+};
+
+/* ---------- Laporan ---------- */
+$('#rTarikh').value = fmt(new Date()); $('#rBulan').value = fmt(new Date()).slice(0, 7);
+$('#rJenis').onchange = () => { const w = $('#rJenis').value === 'w'; $('#rW').classList.toggle('hide', !w); $('#rM').classList.toggle('hide', w); };
+$('#rGo').onclick = async () => {
+  const msg = $('#rMsg'); msg.textContent = '';
+  let from, to, title;
+  if ($('#rJenis').value === 'w') {
+    if (!$('#rTarikh').value) { msg.textContent = 'Pilih tarikh dahulu.'; return; }
+    const d = parse($('#rTarikh').value), mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    const sat = new Date(mon); sat.setDate(mon.getDate() + 5);
+    from = fmt(mon); to = fmt(sat); title = `Laporan mingguan: ${fmtDMY(from)} hingga ${fmtDMY(to)}`;
+  } else {
+    const ym = $('#rBulan').value; if (!ym) { msg.textContent = 'Pilih bulan dahulu.'; return; }
+    const [y, m] = ym.split('-').map(Number);
+    from = ym + '-01'; to = `${ym}-${pad(new Date(y, m, 0).getDate())}`; title = `Laporan bulanan: ${pad(m)}/${y}`;
+  }
+  try {
+    const { data } = await api('report', { from, to });
+    lastRows = data;
+    $('#rTitle').textContent = `${title} (${data.length} tempahan)`;
+    $('#rTbl tbody').innerHTML = data.length ? data.map(r => `<tr><td>${fmtDMY(r.tarikh)}</td><td>${HARI[parse(r.tarikh).getDay()]}</td><td>${r.waktu}</td><td>${esc(r.nama)}</td><td>${esc(r.kelas)}</td><td>${esc(r.tujuan)}</td></tr>`).join('') : '<tr><td colspan="6" class="free">Tiada tempahan dalam tempoh ini.</td></tr>';
+    ['rTitle','rTbl','rPrint','rCsv'].forEach(x => $('#'+x).classList.remove('hide'));
+  } catch (err) { msg.textContent = err.message; }
+};
+$('#rPrint').onclick = () => window.print();
+$('#rCsv').onclick = () => {
+  const q = v => '"' + String(v).replace(/"/g, '""') + '"';
+  const csv = ['Tarikh,Hari,Waktu,Nama,Kelas,Tujuan'].concat(lastRows.map(r => [r.tarikh, HARI[parse(r.tarikh).getDay()], r.waktu, r.nama, r.kelas, r.tujuan].map(q).join(','))).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv' }));
+  a.download = 'laporan-tempahan-trendss.csv'; a.click();
+};
+
+enter();
+</script>
+</body>
+</html>
