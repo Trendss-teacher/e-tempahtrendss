@@ -51,8 +51,8 @@ dialog::backdrop{background:rgba(16,36,58,.5)}
 dialog h3{margin:0 0 4px}
 .row{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
 .hide{display:none!important}
-.chk{display:flex;gap:12px;flex-wrap:wrap}.chk label{display:flex;gap:5px;align-items:center;font-weight:400;margin:0}.chk input{width:auto}
-.two{display:flex;gap:10px}.two>div{flex:1}
+.pick{width:22px;height:22px;padding:0;accent-color:var(--acc);cursor:pointer}
+.bookbar{display:flex;gap:14px;align-items:center;justify-content:flex-end;margin-top:14px}
 .legend{font-size:.85rem;color:var(--mut);margin:0 0 12px}
 @media print{header,.bar,.noprint{display:none!important}body{background:#fff}.card{border:0;padding:0}}
 </style>
@@ -89,11 +89,11 @@ dialog h3{margin:0 0 4px}
       <div class="bar">
         <div><label for="dTarikh" style="margin-top:0">Pilih tarikh</label><input type="date" id="dTarikh"></div>
         <strong id="dHari"></strong>
-        <button id="bulkBtn" style="margin-left:auto">Tempah pukal</button>
       </div>
-      <p class="legend">Waktu 1 hingga 13, Isnin hingga Sabtu. Baris hijau ialah tempahan anda.</p>
+      <p class="legend">Waktu 1 hingga 13, Isnin hingga Sabtu. Tandakan kotak pada waktu kosong (boleh lebih daripada satu, dalam hari yang sama), kemudian tekan Tempah. Baris hijau ialah tempahan anda.</p>
       <div class="msg" id="tMsg" role="alert"></div>
       <div class="scroll"><table id="tbl"><thead><tr><th>Waktu</th><th>Penempah</th><th>Kelas</th><th>Tujuan</th><th></th></tr></thead><tbody></tbody></table></div>
+      <div class="bookbar"><span id="selInfo" class="free"></span><button class="pri" id="bookBtn" disabled>Tempah</button></div>
     </div>
   </section>
 
@@ -115,24 +115,6 @@ dialog h3{margin:0 0 4px}
     </div>
   </section>
 </main>
-
-<!-- Dialog tempah pukal -->
-<dialog id="dlgB">
-  <form id="fBulk" method="dialog">
-    <h3>Tempah pukal</h3>
-    <p class="legend" style="margin:0">Satu kelas yang sama, berulang pada hari dan waktu pilihan. Slot yang sudah ditempah dilangkau.</p>
-    <div class="two"><div><label for="pFrom">Dari tarikh</label><input type="date" id="pFrom" required></div>
-    <div><label for="pTo">Hingga tarikh</label><input type="date" id="pTo" required></div></div>
-    <label>Hari</label>
-    <div class="chk" id="pHari"></div>
-    <div class="two"><div><label for="pWa">Waktu dari</label><select id="pWa"></select></div>
-    <div><label for="pWb">Hingga waktu</label><select id="pWb"></select></div></div>
-    <label for="pKelas">Kelas</label><input id="pKelas" maxlength="80" required>
-    <label for="pTujuan">Tujuan</label><input id="pTujuan" maxlength="200" required>
-    <div class="msg" id="pMsg" role="alert"></div>
-    <div class="row"><button type="button" id="pCancel">Batal</button><button class="pri" id="pOk">Tempah semua</button></div>
-  </form>
-</dialog>
 
 <!-- Dialog tempah / edit -->
 <dialog id="dlg">
@@ -158,7 +140,7 @@ const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`
 const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
 const fmtDMY = s => { const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; };
 
-let S = null, edit = null, slot = null, lastRows = [];
+let S = null, edit = null, slots = [], lastRows = [];
 try { S = JSON.parse(localStorage.getItem('trendss') || 'null'); } catch (e) {}
 
 async function api(action, data = {}) {
@@ -231,6 +213,7 @@ async function loadDay() {
   const dow = parse(t).getDay();
   $('#dHari').textContent = `${HARI[dow]}, ${fmtDMY(t)}`;
   if (dow === 0) { tb.innerHTML = ''; msg.textContent = 'Tiada tempahan pada hari Ahad. Pilih Isnin hingga Sabtu.'; return; }
+  $('#bookBtn').disabled = true; $('#bookBtn').textContent = 'Tempah'; $('#selInfo').textContent = '';
   tb.innerHTML = '<tr><td colspan="5" class="free">Memuatkan jadual...</td></tr>';
   try {
     const { data } = await api('day', { tarikh: t });
@@ -238,7 +221,7 @@ async function loadDay() {
     let h = '';
     for (let w = 1; w <= 13; w++) {
       const r = by[w];
-      if (!r) { h += `<tr><td class="w">Waktu ${w}</td><td class="free" colspan="3">Kosong</td><td class="act"><button class="pri" data-a="book" data-w="${w}">Tempah</button></td></tr>`; continue; }
+      if (!r) { h += `<tr><td class="w">Waktu ${w}</td><td class="free" colspan="3">Kosong</td><td class="act"><input type="checkbox" class="pick" data-w="${w}" aria-label="Pilih Waktu ${w}"></td></tr>`; continue; }
       const mine = r.username.toLowerCase() === S.username.toLowerCase();
       h += `<tr class="${mine ? 'mine' : 'busy'}"><td class="w">Waktu ${w}</td><td>${esc(r.nama)}</td><td>${esc(r.kelas)}</td><td>${esc(r.tujuan)}</td><td class="act">` +
         (mine ? `<button data-a="edit" data-id="${esc(r.id)}" data-k="${esc(r.kelas)}" data-t="${esc(r.tujuan)}">Edit</button> <button class="dng" data-a="del" data-id="${esc(r.id)}">Padam</button>` : '') + '</td></tr>';
@@ -249,12 +232,23 @@ async function loadDay() {
 $('#tbl').onclick = async e => {
   const b = e.target.closest('button'); if (!b) return;
   const a = b.dataset.a;
-  if (a === 'book') { edit = null; slot = +b.dataset.w; openDlg(`Tempah Waktu ${slot}`, '', ''); }
   if (a === 'edit') { edit = b.dataset.id; openDlg('Edit tempahan', b.dataset.k, b.dataset.t); }
   if (a === 'del' && confirm('Padam tempahan ini?')) {
     try { await api('delete', { id: b.dataset.id }); } catch (err) { $('#tMsg').textContent = err.message; }
     loadDay();
   }
+};
+
+$('#tbl').onchange = e => {
+  if (!e.target.classList.contains('pick')) return;
+  const n = document.querySelectorAll('.pick:checked').length;
+  $('#bookBtn').disabled = !n;
+  $('#bookBtn').textContent = n ? `Tempah (${n} waktu)` : 'Tempah';
+};
+$('#bookBtn').onclick = () => {
+  slots = [...document.querySelectorAll('.pick:checked')].map(x => +x.dataset.w);
+  if (!slots.length) return;
+  edit = null; openDlg(`Tempah Waktu ${slots.join(', ')}`, '', '');
 };
 
 /* ---------- Dialog ---------- */
@@ -268,38 +262,13 @@ $('#fBook').onsubmit = async e => {
   const btn = $('#bOk'); btn.disabled = true;
   try {
     const d = { kelas: $('#bKelas').value, tujuan: $('#bTujuan').value };
+    let r = null;
     if (edit) await api('update', { ...d, id: edit });
-    else await api('book', { ...d, tarikh: $('#dTarikh').value, waktu: slot });
-    $('#dlg').close(); loadDay();
+    else r = await api('book', { ...d, tarikh: $('#dTarikh').value, waktu: slots });
+    $('#dlg').close(); await loadDay();
+    if (r && r.dilangkau.length) { $('#tMsg').textContent = `${r.dibuat} waktu berjaya ditempah. Waktu ${r.dilangkau.join(', ')} baru sahaja ditempah orang lain.`; }
   } catch (err) { $('#bMsg').textContent = err.message; }
   btn.disabled = false;
-};
-
-/* ---------- Tempah pukal ---------- */
-$('#pHari').innerHTML = HARI.slice(1).map((n, i) => `<label><input type="checkbox" value="${i+1}">${n}</label>`).join('');
-const opts = Array.from({length: 13}, (_, i) => `<option value="${i+1}">Waktu ${i+1}</option>`).join('');
-$('#pWa').innerHTML = opts; $('#pWb').innerHTML = opts; $('#pWb').value = '1';
-$('#bulkBtn').onclick = () => {
-  const t = $('#dTarikh').value || fmt(new Date());
-  $('#pFrom').value = t; $('#pTo').value = t; $('#pMsg').textContent = '';
-  $('#dlgB').showModal();
-};
-$('#pCancel').onclick = () => $('#dlgB').close();
-$('#fBulk').onsubmit = async e => {
-  e.preventDefault();
-  const btn = $('#pOk'), m = $('#pMsg'); m.textContent = '';
-  const hari = [...document.querySelectorAll('#pHari input:checked')].map(x => +x.value);
-  if (!hari.length) { m.textContent = 'Pilih sekurang-kurangnya satu hari.'; return; }
-  if (+$('#pWa').value > +$('#pWb').value) { m.textContent = 'Waktu dari mesti sebelum atau sama dengan waktu hingga.'; return; }
-  btn.disabled = true; btn.textContent = 'Menempah...';
-  try {
-    const r = await api('bulk', { from: $('#pFrom').value, to: $('#pTo').value, hari, wFrom: +$('#pWa').value, wTo: +$('#pWb').value, kelas: $('#pKelas').value, tujuan: $('#pTujuan').value });
-    $('#dlgB').close();
-    await loadDay();
-    const tm = $('#tMsg'); tm.className = 'msg ok';
-    tm.textContent = `${r.dibuat} slot berjaya ditempah.` + (r.dilangkau.length ? ` ${r.dilangkau.length} slot dilangkau kerana sudah ditempah: ` + r.dilangkau.map(x => `${fmtDMY(x.tarikh)} W${x.waktu}`).join(', ') : '');
-  } catch (err) { m.textContent = err.message; }
-  btn.disabled = false; btn.textContent = 'Tempah semua';
 };
 
 /* ---------- Laporan ---------- */
