@@ -57,9 +57,19 @@ dialog::backdrop{background:rgba(16,36,58,.5)}
 dialog h3{margin:0 0 4px}
 .row{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
 .hide{display:none!important}
+.sumh{margin:18px 0 8px;font-size:1rem}
+table.sum{table-layout:fixed;min-width:780px}
+table.sum th,table.sum td{text-align:center;padding:6px 2px}
+table.sum th:nth-child(-n+2),table.sum td.hr,table.sum td.dt{text-align:left;padding-left:8px}
+table.sum th:nth-child(1),table.sum td.hr{width:92px}
+table.sum th:nth-child(2),table.sum td.dt{width:108px;white-space:nowrap}
+table.sum td.hr{font-weight:700}table.sum td.jm{font-weight:700}
+.bx{display:inline-block;width:22px;height:22px;border:2px solid #8a97a5;border-radius:5px;line-height:18px;font-size:15px;color:#fff;vertical-align:middle;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.bx.on{background:var(--acc);border-color:var(--acc);cursor:help}
 .pick{width:22px;height:22px;padding:0;accent-color:var(--acc);cursor:pointer}
 .bookbar{display:flex;gap:14px;align-items:center;justify-content:flex-end;margin-top:14px}
 .legend{font-size:.85rem;color:var(--mut);margin:0 0 12px}
+@page{size:landscape;margin:10mm}
 @media print{header,.bar,.noprint{display:none!important}body{background:#fff}.card{border:0;padding:0}}
 </style>
 </head>
@@ -124,6 +134,8 @@ dialog h3{margin:0 0 4px}
       </div>
       <div class="msg" id="rMsg" role="alert"></div>
       <h3 id="rTitle" class="hide" style="margin:0 0 10px"></h3>
+      <div id="rSum"></div>
+      <h4 id="rDet" class="sumh hide">Butiran tempahan</h4>
       <div class="scroll"><table id="rTbl" class="hide"><thead><tr><th>Tarikh</th><th>Hari</th><th>Waktu</th><th>Bilik</th><th>Nama</th><th>Kelas</th><th>Tujuan</th></tr></thead><tbody></tbody></table></div>
     </div>
   </section>
@@ -341,6 +353,28 @@ $('#mTbl').onclick = async e => {
 /* ---------- Laporan ---------- */
 $('#rTarikh').value = fmt(new Date()); $('#rBulan').value = fmt(new Date()).slice(0, 7);
 $('#rJenis').onchange = () => { const w = $('#rJenis').value === 'w'; $('#rW').classList.toggle('hide', !w); $('#rM').classList.toggle('hide', w); };
+function renderSummary(from, data, weekly) {
+  const box = $('#rSum');
+  if (!weekly) { box.innerHTML = ''; return; }
+  const sel = $('#rBilik').value;
+  const list = sel ? rooms.filter(r => r.id === sel) : rooms.filter(r => r.aktif || data.some(x => x.bilik === r.id));
+  const start = parse(from);
+  const days = Array.from({ length: 6 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d; });
+  const head = Array.from({ length: 13 }, (_, i) => `<th>${i + 1}</th>`).join('');
+  box.innerHTML = list.map(rm => {
+    const rows = data.filter(x => x.bilik === rm.id);
+    const body = days.map(d => {
+      const t = fmt(d); let n = 0;
+      const cells = Array.from({ length: 13 }, (_, i) => {
+        const b = rows.find(x => x.tarikh === t && x.waktu === i + 1);
+        if (!b) return '<td><span class="bx"></span></td>';
+        n++; return `<td><span class="bx on" title="${esc(b.nama + ' | ' + b.kelas + ' | ' + b.tujuan)}">&#10003;</span></td>`;
+      }).join('');
+      return `<tr><td class="hr">${HARI[d.getDay()].toUpperCase()}</td><td class="dt">${fmtDMY(t)}</td>${cells}<td class="jm">${n}</td></tr>`;
+    }).join('');
+    return `<h4 class="sumh">Ringkasan mingguan: ${esc(rm.nama)}</h4><div class="scroll"><table class="sum"><thead><tr><th>HARI</th><th>TARIKH</th>${head}<th>JUM.</th></tr></thead><tbody>${body}</tbody></table></div>`;
+  }).join('') + '<p class="legend" style="margin-top:8px">&#10003; = waktu ditempah. Halakan tetikus pada tanda untuk lihat nama, kelas dan tujuan.</p>';
+}
 $('#rGo').onclick = async () => {
   const msg = $('#rMsg'); msg.textContent = '';
   let from, to, title;
@@ -359,7 +393,8 @@ $('#rGo').onclick = async () => {
     lastRows = data;
     $('#rTitle').textContent = `${title}${$('#rBilik').value ? ' | ' + roomName($('#rBilik').value) : ' | Semua bilik'} (${data.length} tempahan)`;
     $('#rTbl tbody').innerHTML = data.length ? data.map(r => `<tr><td>${fmtDMY(r.tarikh)}</td><td>${HARI[parse(r.tarikh).getDay()]}</td><td>${r.waktu}</td><td>${esc(r.bilikNama)}</td><td>${esc(r.nama)}</td><td>${esc(r.kelas)}</td><td>${esc(r.tujuan)}</td></tr>`).join('') : '<tr><td colspan="7" class="free">Tiada tempahan dalam tempoh ini.</td></tr>';
-    ['rTitle','rTbl','rPrint','rCsv'].forEach(x => $('#'+x).classList.remove('hide'));
+    renderSummary(from, data, $('#rJenis').value === 'w');
+    ['rTitle','rDet','rTbl','rPrint','rCsv'].forEach(x => $('#'+x).classList.remove('hide'));
   } catch (err) { msg.textContent = err.message; }
 };
 $('#rPrint').onclick = () => window.print();
