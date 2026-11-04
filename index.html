@@ -57,6 +57,11 @@ dialog::backdrop{background:rgba(16,36,58,.5)}
 dialog h3{margin:0 0 4px}
 .row{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
 .hide{display:none!important}
+.bx.mine{background:var(--ink);border-color:var(--ink)}
+#wBox .bx{cursor:pointer}
+table.sum tr.go{cursor:pointer}table.sum tr.go:hover td{background:#f1f7fb}
+.res{border:1px solid var(--acc);background:var(--mine);padding:12px 14px;border-radius:8px;margin-bottom:12px;line-height:1.8}
+.res code{font-size:1.25rem;font-weight:700;letter-spacing:1px;background:#fff;padding:2px 8px;border-radius:4px}
 .sumh{margin:18px 0 8px;font-size:1rem}
 table.sum{table-layout:fixed;min-width:780px}
 table.sum th,table.sum td{text-align:center;padding:6px 2px}
@@ -78,11 +83,14 @@ table.sum td.hr{font-weight:700}table.sum td.jm{font-weight:700}
   <h1><img class="happ" src="e-TempahIcon.png" alt="Logo e-tempah TRENDSS" onerror="this.style.display='none'"><span>e-tempah <span>TRENDSS</span></span></h1>
   <nav id="nav" class="hide">
     <button id="nTemp" class="on">Tempahan</button>
+    <button id="nRing">Ringkasan</button>
     <button id="nLap" class="hide">Laporan</button>
     <button id="nBilik" class="hide">Bilik</button>
+    <button id="nUser" class="hide">Pengguna</button>
   </nav>
   <div class="sp"></div>
   <span class="who hide" id="who"></span>
+  <button id="btnPw" class="hide">Tukar password</button>
   <button id="btnOut" class="hide">Log keluar</button>
 </header>
 
@@ -139,6 +147,34 @@ table.sum td.hr{font-weight:700}table.sum td.jm{font-weight:700}
       <div class="scroll"><table id="rTbl" class="hide"><thead><tr><th>Tarikh</th><th>Hari</th><th>Waktu</th><th>Bilik</th><th>Nama</th><th>Kelas</th><th>Tujuan</th></tr></thead><tbody></tbody></table></div>
     </div>
   </section>
+  <!-- Ringkasan minggu (semua pengguna) -->
+  <section id="vRing" class="hide">
+    <div class="card">
+      <h3 style="margin:0 0 4px">Ringkasan minggu</h3>
+      <p class="legend">Gambaran semua waktu dalam seminggu. Klik mana-mana baris untuk terus menempah pada hari dan bilik itu.</p>
+      <div class="bar noprint">
+        <button id="wPrev">&lsaquo; Minggu lepas</button>
+        <div><label for="wTarikh" style="margin-top:0">Tarikh dalam minggu</label><input type="date" id="wTarikh"></div>
+        <button id="wNext">Minggu depan &rsaquo;</button>
+        <div><label for="wBilik" style="margin-top:0">Bilik</label><select id="wBilik"></select></div>
+      </div>
+      <div class="msg" id="wMsg" role="alert"></div>
+      <div id="wBox"></div>
+    </div>
+  </section>
+
+  <!-- Urus pengguna (admin) -->
+  <section id="vUser" class="hide">
+    <div class="card">
+      <h3 style="margin:0 0 4px">Pengguna</h3>
+      <p class="legend">Untuk guru yang terlupa password, klik <strong>Tetapkan semula</strong>. Sistem menjana password sementara. Beritahu guru itu dan minta dia menukarnya melalui butang &ldquo;Tukar password&rdquo; selepas log masuk.</p>
+      <div class="bar"><div style="flex:1"><label for="uCari" style="margin-top:0">Cari pengguna</label><input id="uCari" placeholder="username atau nama"></div></div>
+      <div class="msg" id="uMsg" role="alert"></div>
+      <div id="uRes" class="hide"></div>
+      <div class="scroll"><table id="uTbl"><thead><tr><th>Username</th><th>Nama penuh</th><th>Peranan</th><th></th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
   <!-- Urus bilik (admin) -->
   <section id="vBilik" class="hide">
     <div class="card">
@@ -153,6 +189,17 @@ table.sum td.hr{font-weight:700}table.sum td.jm{font-weight:700}
     </div>
   </section>
 </main>
+
+<!-- Dialog tukar password -->
+<dialog id="dlgPw">
+  <form id="fPw" method="dialog">
+    <h3>Tukar password</h3>
+    <label for="pwOld">Password semasa</label><input id="pwOld" type="password" autocomplete="current-password" required>
+    <label for="pwNew">Password baharu (minimum 4 aksara)</label><input id="pwNew" type="password" autocomplete="new-password" minlength="4" required>
+    <div class="msg" id="pwMsg" role="alert"></div>
+    <div class="row"><button type="button" id="pwCancel">Batal</button><button class="pri">Simpan</button></div>
+  </form>
+</dialog>
 
 <!-- Dialog tempah / edit -->
 <dialog id="dlg">
@@ -194,18 +241,21 @@ async function api(action, data = {}) {
 
 /* ---------- Paparan ---------- */
 function view(v) {
-  ['vAuth','vTemp','vLap','vBilik'].forEach(x => $('#'+x).classList.toggle('hide', x !== v));
+  ['vAuth','vTemp','vRing','vLap','vBilik','vUser'].forEach(x => $('#'+x).classList.toggle('hide', x !== v));
   $('#nTemp').classList.toggle('on', v === 'vTemp');
   $('#nLap').classList.toggle('on', v === 'vLap');
   $('#nBilik').classList.toggle('on', v === 'vBilik');
+  $('#nRing').classList.toggle('on', v === 'vRing');
+  $('#nUser').classList.toggle('on', v === 'vUser');
 }
 async function enter() {
   const on = !!S;
-  ['nav','who','btnOut'].forEach(x => $('#'+x).classList.toggle('hide', !on));
+  ['nav','who','btnPw','btnOut'].forEach(x => $('#'+x).classList.toggle('hide', !on));
   if (!on) { view('vAuth'); return; }
   $('#who').textContent = S.nama + (S.role === 'admin' ? ' (admin)' : '');
   $('#nLap').classList.toggle('hide', S.role !== 'admin');
   $('#nBilik').classList.toggle('hide', S.role !== 'admin');
+  $('#nUser').classList.toggle('hide', S.role !== 'admin');
   if (!$('#dTarikh').value) $('#dTarikh').value = fmt(new Date());
   view('vTemp'); await loadRooms(); loadDay();
 }
@@ -244,6 +294,8 @@ $('#btnOut').onclick = logout;
 $('#nTemp').onclick = () => { view('vTemp'); loadDay(); };
 $('#nLap').onclick = () => { view('vLap'); loadRooms(); };
 $('#nBilik').onclick = () => { view('vBilik'); loadRooms(); };
+$('#nRing').onclick = async () => { view('vRing'); await loadRooms(); loadWeek(); };
+$('#nUser').onclick = () => { view('vUser'); loadUsers(); };
 
 /* ---------- Jadual harian ---------- */
 $('#dTarikh').onchange = loadDay;
@@ -315,6 +367,72 @@ $('#fBook').onsubmit = async e => {
   btn.disabled = false;
 };
 
+/* ---------- Ringkasan minggu (semua pengguna) ---------- */
+const mondayOf = s => { const d = parse(s); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; };
+async function loadWeek() {
+  const msg = $('#wMsg'); msg.textContent = '';
+  if (!$('#wTarikh').value) $('#wTarikh').value = fmt(new Date());
+  const mon = mondayOf($('#wTarikh').value), sat = new Date(mon); sat.setDate(mon.getDate() + 5);
+  $('#wBox').innerHTML = '<p class="free">Memuatkan...</p>';
+  try {
+    const { data } = await api('week', { from: fmt(mon), to: fmt(sat) });
+    const sel = $('#wBilik').value, list = rooms.filter(r => r.aktif && (!sel || r.id === sel));
+    const days = Array.from({ length: 6 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return d; });
+    const head = Array.from({ length: 13 }, (_, i) => `<th>${i + 1}</th>`).join('');
+    $('#wBox').innerHTML = `<h4 class="sumh" style="margin-top:0">Minggu ${fmtDMY(fmt(mon))} hingga ${fmtDMY(fmt(sat))}</h4>` + list.map(rm => {
+      const body = days.map(d => {
+        const t = fmt(d); let n = 0;
+        const cells = Array.from({ length: 13 }, (_, i) => {
+          const b = data.find(x => x.bilik === rm.id && x.tarikh === t && x.waktu === i + 1);
+          if (!b) return '<td><span class="bx"></span></td>';
+          n++; return `<td><span class="bx ${b.mine ? 'mine' : 'on'}">&#10003;</span></td>`;
+        }).join('');
+        return `<tr class="go" data-t="${t}" data-r="${esc(rm.id)}" title="Klik untuk menempah"><td class="hr">${HARI[d.getDay()].toUpperCase()}</td><td class="dt">${fmtDMY(t)}</td>${cells}<td class="jm">${n}</td></tr>`;
+      }).join('');
+      return `<h4 class="sumh">${esc(rm.nama)}</h4><div class="scroll"><table class="sum"><thead><tr><th>HARI</th><th>TARIKH</th>${head}<th>JUM.</th></tr></thead><tbody>${body}</tbody></table></div>`;
+    }).join('') + '<p class="legend" style="margin-top:10px"><span class="bx on" style="width:18px;height:18px;line-height:14px;font-size:12px">&#10003;</span> ditempah orang lain &nbsp; <span class="bx mine" style="width:18px;height:18px;line-height:14px;font-size:12px">&#10003;</span> tempahan anda &nbsp; <span class="bx" style="width:18px;height:18px"></span> kosong</p>';
+  } catch (err) { $('#wBox').innerHTML = ''; msg.textContent = err.message; }
+}
+$('#wTarikh').onchange = loadWeek; $('#wBilik').onchange = loadWeek;
+const shiftWeek = n => { const m = mondayOf($('#wTarikh').value || fmt(new Date())); m.setDate(m.getDate() + n); $('#wTarikh').value = fmt(m); loadWeek(); };
+$('#wPrev').onclick = () => shiftWeek(-7); $('#wNext').onclick = () => shiftWeek(7);
+$('#wBox').onclick = e => {
+  const tr = e.target.closest('tr.go'); if (!tr) return;
+  $('#dTarikh').value = tr.dataset.t; $('#dBilik').value = tr.dataset.r;
+  view('vTemp'); loadDay();
+};
+
+/* ---------- Pengguna (admin) & tukar password ---------- */
+let users = [];
+async function loadUsers() {
+  try { const { data } = await api('users'); users = data; renderUsers(); }
+  catch (err) { $('#uMsg').textContent = err.message; }
+}
+function renderUsers() {
+  const q = $('#uCari').value.trim().toLowerCase();
+  $('#uTbl tbody').innerHTML = users.filter(u => !q || (u.username + ' ' + u.nama).toLowerCase().includes(q))
+    .map(u => `<tr><td>${esc(u.username)}</td><td>${esc(u.nama)}</td><td>${esc(u.peranan)}</td><td class="act"><button data-u="${esc(u.username)}" data-n="${esc(u.nama)}">Tetapkan semula</button></td></tr>`).join('')
+    || '<tr><td colspan="4" class="free">Tiada pengguna.</td></tr>';
+}
+$('#uCari').oninput = renderUsers;
+$('#uTbl').onclick = async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (!confirm(`Tetapkan semula password untuk ${b.dataset.n} (${b.dataset.u})?`)) return;
+  const m = $('#uMsg'), box = $('#uRes'); m.textContent = ''; box.className = 'hide';
+  try {
+    const r = await api('resetPass', { username: b.dataset.u });
+    box.innerHTML = `Password sementara untuk <strong>${esc(b.dataset.n)}</strong> (${esc(b.dataset.u)}):<br><code>${esc(r.temp)}</code><br><span class="legend">Paparan ini hilang apabila anda tinggalkan halaman. Beritahu guru itu dan minta dia menukar password selepas log masuk.</span>`;
+    box.className = 'res';
+  } catch (err) { m.textContent = err.message; }
+};
+$('#btnPw').onclick = () => { $('#pwOld').value = ''; $('#pwNew').value = ''; $('#pwMsg').textContent = ''; $('#dlgPw').showModal(); $('#pwOld').focus(); };
+$('#pwCancel').onclick = () => $('#dlgPw').close();
+$('#fPw').onsubmit = async e => {
+  e.preventDefault();
+  try { await api('changePass', { oldPass: $('#pwOld').value, newPass: $('#pwNew').value }); $('#dlgPw').close(); alert('Password berjaya ditukar.'); }
+  catch (err) { $('#pwMsg').textContent = err.message; }
+};
+
 /* ---------- Bilik ---------- */
 const roomName = id => (rooms.find(r => r.id === id) || {}).nama || id;
 async function loadRooms() {
@@ -324,6 +442,9 @@ async function loadRooms() {
     const keep = $('#dBilik').value, act = rooms.filter(r => r.aktif);
     $('#dBilik').innerHTML = act.map(r => `<option value="${esc(r.id)}">${esc(r.nama)}</option>`).join('');
     if (act.some(r => r.id === keep)) $('#dBilik').value = keep;
+    const kw = $('#wBilik').value;
+    $('#wBilik').innerHTML = '<option value="">Semua bilik</option>' + act.map(r => `<option value="${esc(r.id)}">${esc(r.nama)}</option>`).join('');
+    $('#wBilik').value = kw;
     const kr = $('#rBilik').value;
     $('#rBilik').innerHTML = '<option value="">Semua bilik</option>' + rooms.map(r => `<option value="${esc(r.id)}">${esc(r.nama)}${r.aktif ? '' : ' (tidak aktif)'}</option>`).join('');
     $('#rBilik').value = kr;
