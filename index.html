@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#10243a">
 <link rel="apple-touch-icon" href="e-TempahIcon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="e-tempah">
 <title>e-tempah TRENDSS</title>
 <link rel="icon" type="image/png" href="e-TempahIcon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -132,7 +136,7 @@ table.sum th:first-child{background:#f6f9fc}
     <button id="nUser" class="hide"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1M17 4.5a3.5 3.5 0 0 1 0 7M22 21v-1a5 5 0 0 0-3-4.6"/></svg><span>Pengguna</span></button>
   </nav>
   <div class="sp"></div>
-  <details id="acct" class="hide"><summary id="who"></summary><div class="menu"><button id="btnPw">Tukar password</button><button id="btnOut">Log keluar</button></div></details>
+  <details id="acct" class="hide"><summary id="who"></summary><div class="menu"><button id="btnInst" class="hide">Pasang aplikasi</button><button id="btnPw">Tukar password</button><button id="btnOut">Log keluar</button></div></details>
 </header>
 
 <main>
@@ -572,6 +576,11 @@ $('#rCsv').onclick = () => {
 
 $('#acct').addEventListener('click', e => { if (e.target.closest('button')) $('#acct').open = false; });
 document.addEventListener('click', e => { const a = $('#acct'); if (a.open && !a.contains(e.target)) a.open = false; });
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+let dip = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); dip = e; $('#btnInst').classList.remove('hide'); });
+$('#btnInst').onclick = async () => { if (!dip) return; dip.prompt(); await dip.userChoice; dip = null; $('#btnInst').classList.add('hide'); };
+window.addEventListener('appinstalled', () => $('#btnInst').classList.add('hide'));
 enter();
 </script>
 </body>
