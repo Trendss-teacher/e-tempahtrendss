@@ -1,0 +1,15 @@
+{
+  "name": "e-tempah TRENDSS",
+  "short_name": "e-tempah",
+  "description": "Sistem tempahan makmal komputer dan bilik khas",
+  "lang": "ms",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef2f6",
+  "theme_color": "#10243a",
+  "icons": [
+    { "src": "e-TempahIcon.png", "sizes": "192x192 512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
