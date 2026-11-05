@@ -2,7 +2,9 @@
 <html lang="ms">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10243a">
+<link rel="apple-touch-icon" href="e-TempahIcon.png">
 <title>e-tempah TRENDSS</title>
 <link rel="icon" type="image/png" href="e-TempahIcon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -76,22 +78,61 @@ table.sum td.hr{font-weight:700}table.sum td.jm{font-weight:700}
 .legend{font-size:.85rem;color:var(--mut);margin:0 0 12px}
 @page{size:landscape;margin:10mm}
 @media print{header,.bar,.noprint{display:none!important}body{background:#fff}.card{border:0;padding:0}}
+
+nav button{display:flex;align-items:center;gap:6px}
+nav svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+#acct{position:relative}
+#acct summary{list-style:none;cursor:pointer;padding:7px 12px;border:1px solid #40566e;border-radius:6px;font-size:.9rem;max-width:48vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#acct summary::-webkit-details-marker{display:none}
+#acct summary::after{content:" \25BE"}
+#acct .menu{position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px;min-width:190px;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:30;display:flex;flex-direction:column;gap:2px}
+header #acct .menu button{background:#fff;color:var(--ink);border:0;text-align:left}
+header #acct .menu button:hover{background:var(--bg)}
+tr.fr{cursor:pointer}tr.fr:has(.pick:checked) td{background:#e2f3f1}
+table.sum td.hr,table.sum th:first-child{position:sticky;left:0;z-index:1;background:#fff}
+table.sum th:first-child{background:#f6f9fc}
+@media (max-width:700px){
+ main{padding:12px 10px 100px}
+ .card{padding:14px 12px;border-radius:10px}
+ header{padding:10px 14px;gap:10px;padding-top:calc(10px + env(safe-area-inset-top))}
+ header h1{font-size:1.05rem}.happ{height:32px}
+ header nav{position:fixed;left:0;right:0;bottom:0;margin:0;gap:0;background:var(--ink);padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:20;box-shadow:0 -2px 14px rgba(0,0,0,.25)}
+ header nav button{flex:1;flex-direction:column;gap:2px;border:0;font-size:.72rem;padding:6px 2px;min-height:52px;background:transparent;color:#a9b8c8}
+ header nav button.on{background:transparent;color:#6fd8cf}
+ button{min-height:44px}.act button{min-height:40px}
+ .bar>div{flex:1 1 140px;min-width:0}.bar button{flex:1 1 auto}
+ #tbl thead{display:none}
+ #tbl,#tbl tbody{display:block}
+ #tbl tr{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"w n a" "w k a" "w t a";column-gap:12px;align-items:center;padding:10px 12px;margin-bottom:8px;border:1px solid var(--line);border-radius:10px;background:#fff}
+ #tbl tr.busy{background:var(--busy)}#tbl tr.mine{background:var(--mine)}#tbl tr.fr:has(.pick:checked){background:#e2f3f1}
+ #tbl td{border:0;padding:1px 0;background:transparent}
+ #tbl td.w{grid-area:w;width:auto;min-width:64px;font-weight:700}
+ #tbl td.cn{grid-area:n;font-weight:500}
+ #tbl td.ck{grid-area:k;font-size:.88rem;color:var(--mut)}
+ #tbl td.ct{grid-area:t;font-size:.88rem;color:var(--mut)}
+ #tbl td.act{grid-area:a;width:auto}
+ .pick{width:28px;height:28px}
+ .bookbar{position:sticky;bottom:calc(68px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line);padding:10px 0;margin-top:6px;z-index:5}
+ .bookbar button{flex:1}
+ table.sum{min-width:600px}.bx{width:18px;height:18px;line-height:14px;font-size:12px}
+ table.sum th:nth-child(2),table.sum td.dt{width:84px}
+ dialog{margin:auto 0 0;width:100%;max-width:none;border-radius:16px 16px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom))}
+ .auth{margin:12px auto}
+}
 </style>
 </head>
 <body>
 <header>
   <h1><img class="happ" src="e-TempahIcon.png" alt="Logo e-tempah TRENDSS" onerror="this.style.display='none'"><span>e-tempah <span>TRENDSS</span></span></h1>
-  <nav id="nav" class="hide">
-    <button id="nTemp" class="on">Tempahan</button>
-    <button id="nRing">Ringkasan</button>
-    <button id="nLap" class="hide">Laporan</button>
-    <button id="nBilik" class="hide">Bilik</button>
-    <button id="nUser" class="hide">Pengguna</button>
+  <nav id="nav" class="hide" aria-label="Menu utama">
+    <button id="nTemp" class="on"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Tempahan</span></button>
+    <button id="nRing"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>Ringkasan</span></button>
+    <button id="nLap" class="hide"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg><span>Laporan</span></button>
+    <button id="nBilik" class="hide"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M14 12v.01"/></svg><span>Bilik</span></button>
+    <button id="nUser" class="hide"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1M17 4.5a3.5 3.5 0 0 1 0 7M22 21v-1a5 5 0 0 0-3-4.6"/></svg><span>Pengguna</span></button>
   </nav>
   <div class="sp"></div>
-  <span class="who hide" id="who"></span>
-  <button id="btnPw" class="hide">Tukar password</button>
-  <button id="btnOut" class="hide">Log keluar</button>
+  <details id="acct" class="hide"><summary id="who"></summary><div class="menu"><button id="btnPw">Tukar password</button><button id="btnOut">Log keluar</button></div></details>
 </header>
 
 <main>
@@ -250,7 +291,7 @@ function view(v) {
 }
 async function enter() {
   const on = !!S;
-  ['nav','who','btnPw','btnOut'].forEach(x => $('#'+x).classList.toggle('hide', !on));
+  ['nav','acct'].forEach(x => $('#'+x).classList.toggle('hide', !on));
   if (!on) { view('vAuth'); return; }
   $('#who').textContent = S.nama + (S.role === 'admin' ? ' (admin)' : '');
   $('#nLap').classList.toggle('hide', S.role !== 'admin');
@@ -310,22 +351,24 @@ async function loadDay() {
   $('#dHari').textContent = `${roomName(b)} | ${HARI[dow]}, ${fmtDMY(t)}`;
   if (dow === 0) { tb.innerHTML = ''; msg.textContent = 'Tiada tempahan pada hari Ahad. Pilih Isnin hingga Sabtu.'; return; }
   $('#bookBtn').disabled = true; $('#bookBtn').textContent = 'Tempah'; $('#selInfo').textContent = '';
-  tb.innerHTML = '<tr><td colspan="5" class="free">Memuatkan jadual...</td></tr>';
+  tb.innerHTML = '<tr><td colspan="5" class="free cn">Memuatkan jadual...</td></tr>';
   try {
     const { data } = await api('day', { tarikh: t, bilik: b });
     const by = {}; data.forEach(r => by[r.waktu] = r);
     let h = '';
     for (let w = 1; w <= 13; w++) {
       const r = by[w];
-      if (!r) { h += `<tr><td class="w">Waktu ${w}</td><td class="free" colspan="3">Kosong</td><td class="act"><input type="checkbox" class="pick" data-w="${w}" aria-label="Pilih Waktu ${w}"></td></tr>`; continue; }
+      if (!r) { h += `<tr class="fr"><td class="w">Waktu ${w}</td><td class="free cn" colspan="3">Kosong, ketik untuk pilih</td><td class="act"><input type="checkbox" class="pick" data-w="${w}" aria-label="Pilih Waktu ${w}"></td></tr>`; continue; }
       const mine = r.username.toLowerCase() === S.username.toLowerCase();
-      h += `<tr class="${mine ? 'mine' : 'busy'}"><td class="w">Waktu ${w}</td><td>${esc(r.nama)}</td><td>${esc(r.kelas)}</td><td>${esc(r.tujuan)}</td><td class="act">` +
+      h += `<tr class="${mine ? 'mine' : 'busy'}"><td class="w">Waktu ${w}</td><td class="cn">${esc(r.nama)}</td><td class="ck">${esc(r.kelas)}</td><td class="ct">${esc(r.tujuan)}</td><td class="act">` +
         (mine ? `<button data-a="edit" data-id="${esc(r.id)}" data-k="${esc(r.kelas)}" data-t="${esc(r.tujuan)}">Edit</button> <button class="dng" data-a="del" data-id="${esc(r.id)}">Padam</button>` : '') + '</td></tr>';
     }
     tb.innerHTML = h;
   } catch (err) { tb.innerHTML = ''; msg.textContent = err.message; }
 }
 $('#tbl').onclick = async e => {
+  const fr = e.target.closest('tr.fr');
+  if (fr && !e.target.closest('input')) { const c = fr.querySelector('.pick'); c.checked = !c.checked; c.dispatchEvent(new Event('change', { bubbles: true })); return; }
   const b = e.target.closest('button'); if (!b) return;
   const a = b.dataset.a;
   if (a === 'edit') { edit = b.dataset.id; openDlg('Edit tempahan', b.dataset.k, b.dataset.t); }
@@ -527,6 +570,8 @@ $('#rCsv').onclick = () => {
   a.download = 'laporan-tempahan-trendss.csv'; a.click();
 };
 
+$('#acct').addEventListener('click', e => { if (e.target.closest('button')) $('#acct').open = false; });
+document.addEventListener('click', e => { const a = $('#acct'); if (a.open && !a.contains(e.target)) a.open = false; });
 enter();
 </script>
 </body>
