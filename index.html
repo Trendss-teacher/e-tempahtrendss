@@ -63,6 +63,9 @@ dialog::backdrop{background:rgba(16,36,58,.5)}
 dialog h3{margin:0 0 4px}
 .row{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
 .hide{display:none!important}
+.bx.blk{background:#e6e9ee;border-color:#c8d0da;color:#8a97a5}
+tr.blk td{color:var(--mut);background:#f1f3f6}
+tr.fr:has(.pick:disabled){opacity:.45;cursor:not-allowed}
 .bx.mine{background:var(--ink);border-color:var(--ink)}
 #wBox .bx{cursor:pointer}
 table.sum tr.go{cursor:pointer}table.sum tr.go:hover td{background:#f1f7fb}
@@ -108,7 +111,7 @@ table.sum th:first-child{background:#f6f9fc}
  #tbl thead{display:none}
  #tbl,#tbl tbody{display:block}
  #tbl tr{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"w n a" "w k a" "w t a";column-gap:12px;align-items:center;padding:10px 12px;margin-bottom:8px;border:1px solid var(--line);border-radius:10px;background:#fff}
- #tbl tr.busy{background:var(--busy)}#tbl tr.mine{background:var(--mine)}#tbl tr.fr:has(.pick:checked){background:#e2f3f1}
+ #tbl tr.blk{background:#f1f3f6}#tbl tr.busy{background:var(--busy)}#tbl tr.mine{background:var(--mine)}#tbl tr.fr:has(.pick:checked){background:#e2f3f1}
  #tbl td{border:0;padding:1px 0;background:transparent}
  #tbl td.w{grid-area:w;width:auto;min-width:64px;font-weight:700}
  #tbl td.cn{grid-area:n;font-weight:500}
@@ -118,7 +121,7 @@ table.sum th:first-child{background:#f6f9fc}
  .pick{width:28px;height:28px}
  .bookbar{position:sticky;bottom:calc(68px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line);padding:10px 0;margin-top:6px;z-index:5}
  .bookbar button{flex:1}
- table.sum{min-width:600px}.bx{width:18px;height:18px;line-height:14px;font-size:12px}
+ table.sum{min-width:680px}.bx{width:18px;height:18px;line-height:14px;font-size:12px}
  table.sum th:nth-child(2),table.sum td.dt{width:84px}
  dialog{margin:auto 0 0;width:100%;max-width:none;border-radius:16px 16px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom))}
  .auth{margin:12px auto}
@@ -145,7 +148,7 @@ table.sum th:first-child{background:#f6f9fc}
     <div class="brand">
       <img class="sek" src="logo-sekolah.png" alt="Logo sekolah" onerror="this.style.display='none'">
       <h2>e-tempah TRENDSS</h2>
-      <p>Sistem tempahan SMK Kem Terendak</p>
+      <p>Sistem tempahan makmal komputer</p>
     </div>
     <div class="tabs"><button id="tLogin" class="on">Log masuk</button><button id="tReg">Daftar akaun</button></div>
     <form id="fAuth" autocomplete="on">
@@ -165,7 +168,7 @@ table.sum th:first-child{background:#f6f9fc}
         <div><label for="dTarikh" style="margin-top:0">Pilih tarikh</label><input type="date" id="dTarikh"></div>
         <strong id="dHari"></strong>
       </div>
-      <p class="legend">Waktu 1 hingga 13, Isnin hingga Sabtu. Tandakan kotak pada waktu kosong (boleh lebih daripada satu, dalam hari yang sama), kemudian tekan Tempah. Baris hijau ialah tempahan anda.</p>
+      <p class="legend">Waktu 1 hingga 15, Isnin hingga Sabtu. Tandakan kotak pada waktu kosong (boleh lebih daripada satu, dalam hari yang sama), kemudian tekan Tempah. Baris hijau ialah tempahan anda.</p>
       <div class="msg" id="tMsg" role="alert"></div>
       <div class="scroll"><table id="tbl"><thead><tr><th>Waktu</th><th>Penempah</th><th>Kelas</th><th>Tujuan</th><th></th></tr></thead><tbody></tbody></table></div>
       <div class="bookbar"><span id="selInfo" class="free"></span><button class="pri" id="bookBtn" disabled>Tempah</button></div>
@@ -263,6 +266,8 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyPhe1YipdNdwOoE3uUrWcc
 /* ================================================================ */
 
 const $ = s => document.querySelector(s);
+const MAX_WAKTU = 15; // mesti sama dengan MAX_WAKTU dalam Code.gs
+const OVERLAP = { 6: 7, 7: 6 }; // mesti sama dengan OVERLAP dalam Code.gs
 const HARI = ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad = n => String(n).padStart(2, '0');
@@ -360,8 +365,9 @@ async function loadDay() {
     const { data } = await api('day', { tarikh: t, bilik: b });
     const by = {}; data.forEach(r => by[r.waktu] = r);
     let h = '';
-    for (let w = 1; w <= 13; w++) {
+    for (let w = 1; w <= MAX_WAKTU; w++) {
       const r = by[w];
+      if (!r && OVERLAP[w] && by[OVERLAP[w]]) { h += `<tr class="blk"><td class="w">Waktu ${w}</td><td class="free cn" colspan="3">Tidak tersedia (bertindih dengan Waktu ${OVERLAP[w]})</td><td class="act"></td></tr>`; continue; }
       if (!r) { h += `<tr class="fr"><td class="w">Waktu ${w}</td><td class="free cn" colspan="3">Kosong, ketik untuk pilih</td><td class="act"><input type="checkbox" class="pick" data-w="${w}" aria-label="Pilih Waktu ${w}"></td></tr>`; continue; }
       const mine = r.username.toLowerCase() === S.username.toLowerCase();
       h += `<tr class="${mine ? 'mine' : 'busy'}"><td class="w">Waktu ${w}</td><td class="cn">${esc(r.nama)}</td><td class="ck">${esc(r.kelas)}</td><td class="ct">${esc(r.tujuan)}</td><td class="act">` +
@@ -372,7 +378,7 @@ async function loadDay() {
 }
 $('#tbl').onclick = async e => {
   const fr = e.target.closest('tr.fr');
-  if (fr && !e.target.closest('input')) { const c = fr.querySelector('.pick'); c.checked = !c.checked; c.dispatchEvent(new Event('change', { bubbles: true })); return; }
+  if (fr && !e.target.closest('input')) { const c = fr.querySelector('.pick'); if (c.disabled) return; c.checked = !c.checked; c.dispatchEvent(new Event('change', { bubbles: true })); return; }
   const b = e.target.closest('button'); if (!b) return;
   const a = b.dataset.a;
   if (a === 'edit') { edit = b.dataset.id; openDlg('Edit tempahan', b.dataset.k, b.dataset.t); }
@@ -387,6 +393,10 @@ $('#tbl').onchange = e => {
   const n = document.querySelectorAll('.pick:checked').length;
   $('#bookBtn').disabled = !n;
   $('#bookBtn').textContent = n ? `Tempah (${n} waktu)` : 'Tempah';
+  Object.keys(OVERLAP).forEach(w => { // waktu bertindih: pilih satu, satu lagi dikunci
+    const a = document.querySelector(`.pick[data-w="${w}"]`), o = document.querySelector(`.pick[data-w="${OVERLAP[w]}"]`);
+    if (a && o) o.disabled = a.checked;
+  });
 };
 $('#bookBtn').onclick = () => {
   slots = [...document.querySelectorAll('.pick:checked')].map(x => +x.dataset.w);
@@ -409,7 +419,7 @@ $('#fBook').onsubmit = async e => {
     if (edit) await api('update', { ...d, id: edit });
     else r = await api('book', { ...d, tarikh: $('#dTarikh').value, waktu: slots, bilik: $('#dBilik').value });
     $('#dlg').close(); await loadDay();
-    if (r && r.dilangkau.length) { $('#tMsg').textContent = `${r.dibuat} waktu berjaya ditempah. Waktu ${r.dilangkau.join(', ')} baru sahaja ditempah orang lain.`; }
+    if (r && r.dilangkau.length) { $('#tMsg').textContent = `${r.dibuat} waktu berjaya ditempah. Waktu ${r.dilangkau.join(', ')} tidak dapat ditempah kerana baru sahaja ditempah orang lain atau bertindih dengan waktu yang sudah ditempah.`; }
   } catch (err) { $('#bMsg').textContent = err.message; }
   btn.disabled = false;
 };
@@ -425,19 +435,23 @@ async function loadWeek() {
     const { data } = await api('week', { from: fmt(mon), to: fmt(sat) });
     const sel = $('#wBilik').value, list = rooms.filter(r => r.aktif && (!sel || r.id === sel));
     const days = Array.from({ length: 6 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return d; });
-    const head = Array.from({ length: 13 }, (_, i) => `<th>${i + 1}</th>`).join('');
+    const head = Array.from({ length: MAX_WAKTU }, (_, i) => `<th>${i + 1}</th>`).join('');
     $('#wBox').innerHTML = `<h4 class="sumh" style="margin-top:0">Minggu ${fmtDMY(fmt(mon))} hingga ${fmtDMY(fmt(sat))}</h4>` + list.map(rm => {
       const body = days.map(d => {
         const t = fmt(d); let n = 0;
-        const cells = Array.from({ length: 13 }, (_, i) => {
+        const cells = Array.from({ length: MAX_WAKTU }, (_, i) => {
           const b = data.find(x => x.bilik === rm.id && x.tarikh === t && x.waktu === i + 1);
-          if (!b) return '<td><span class="bx"></span></td>';
+          if (!b) {
+            const o = OVERLAP[i + 1];
+            if (o && data.some(x => x.bilik === rm.id && x.tarikh === t && x.waktu === o)) return `<td><span class="bx blk" title="Bertindih dengan Waktu ${o}">&ndash;</span></td>`;
+            return '<td><span class="bx"></span></td>';
+          }
           n++; return `<td><span class="bx ${b.mine ? 'mine' : 'on'}">&#10003;</span></td>`;
         }).join('');
         return `<tr class="go" data-t="${t}" data-r="${esc(rm.id)}" title="Klik untuk menempah"><td class="hr">${HARI[d.getDay()].toUpperCase()}</td><td class="dt">${fmtDMY(t)}</td>${cells}<td class="jm">${n}</td></tr>`;
       }).join('');
       return `<h4 class="sumh">${esc(rm.nama)}</h4><div class="scroll"><table class="sum"><thead><tr><th>HARI</th><th>TARIKH</th>${head}<th>JUM.</th></tr></thead><tbody>${body}</tbody></table></div>`;
-    }).join('') + '<p class="legend" style="margin-top:10px"><span class="bx on" style="width:18px;height:18px;line-height:14px;font-size:12px">&#10003;</span> ditempah orang lain &nbsp; <span class="bx mine" style="width:18px;height:18px;line-height:14px;font-size:12px">&#10003;</span> tempahan anda &nbsp; <span class="bx" style="width:18px;height:18px"></span> kosong</p>';
+    }).join('') + '<p class="legend" style="margin-top:10px"><span class="bx on" style="width:18px;height:18px;line-height:14px;font-size:12px">&#10003;</span> ditempah orang lain &nbsp; <span class="bx mine" style="width:18px;height:18px;line-height:14px;font-size:12px">&#10003;</span> tempahan anda &nbsp; <span class="bx" style="width:18px;height:18px"></span> kosong &nbsp; <span class="bx blk" style="width:18px;height:18px;line-height:14px;font-size:12px">&ndash;</span> tidak tersedia (waktu bertindih)</p>';
   } catch (err) { $('#wBox').innerHTML = ''; msg.textContent = err.message; }
 }
 $('#wTarikh').onchange = loadWeek; $('#wBilik').onchange = loadWeek;
@@ -528,12 +542,12 @@ function renderSummary(from, data, weekly) {
   const list = sel ? rooms.filter(r => r.id === sel) : rooms.filter(r => r.aktif || data.some(x => x.bilik === r.id));
   const start = parse(from);
   const days = Array.from({ length: 6 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d; });
-  const head = Array.from({ length: 13 }, (_, i) => `<th>${i + 1}</th>`).join('');
+  const head = Array.from({ length: MAX_WAKTU }, (_, i) => `<th>${i + 1}</th>`).join('');
   box.innerHTML = list.map(rm => {
     const rows = data.filter(x => x.bilik === rm.id);
     const body = days.map(d => {
       const t = fmt(d); let n = 0;
-      const cells = Array.from({ length: 13 }, (_, i) => {
+      const cells = Array.from({ length: MAX_WAKTU }, (_, i) => {
         const b = rows.find(x => x.tarikh === t && x.waktu === i + 1);
         if (!b) return '<td><span class="bx"></span></td>';
         n++; return `<td><span class="bx on" title="${esc(b.nama + ' | ' + b.kelas + ' | ' + b.tujuan)}">&#10003;</span></td>`;
